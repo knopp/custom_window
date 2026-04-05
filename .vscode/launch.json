@@ -24,6 +24,17 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
+        },
+        {
+            "name": "custom_window (attach)",
+            "request": "attach",
+            "type": "dart",
+            "vmServiceInfoFile": "vmservice.json"
+        },
+        {
+            "name": "custom_window C++ Attach",
+            "type": "cppvsdbg",
+            "request": "attach",
         }
     ]
 }

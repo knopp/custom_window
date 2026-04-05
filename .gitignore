@@ -45,3 +45,5 @@ app.*.map.json
 /android/app/release
 
 compile_commands.json
+vmservice.json
+.cache

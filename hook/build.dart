@@ -9,6 +9,10 @@ void main(List<String> args) async {
   await build(args, (input, output) async {
     final packageName = input.packageName;
 
+    if (!input.config.buildCodeAssets) {
+      return;
+    }
+
     NinjaBuilder? ninjaBuilder;
 
     if (input.config.code.targetOS == OS.macOS) {
@@ -19,6 +23,16 @@ void main(List<String> args) async {
         language: Language.objectiveC,
         frameworks: ['AppKit'],
         flags: ['-O0', '-g3', "-fobjc-arc"],
+      );
+    } else if (input.config.code.targetOS == OS.windows) {
+      ninjaBuilder = NinjaBuilder.library(
+        name: packageName,
+        assetName: 'windows',
+        sources: ['src/windows.cc'],
+        language: Language.cpp,
+        libraries: ['user32', 'dwmapi'],
+        flags: [],
+        defines: {'CW_BUILDING_DLL': ''},
       );
     }
 
