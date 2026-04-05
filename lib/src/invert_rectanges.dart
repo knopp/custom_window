@@ -2,7 +2,7 @@ import 'dart:ui';
 
 /// Given bounds and a set of rectangles, returns a set of non-overlapping
 /// rectangles that covers the area not covered by original rectangles.
-List<Rect> invert(Rect bounds, List<Rect> rectangles) {
+List<Rect> invert(Rect bounds, Iterable<Rect> rectangles) {
   final clipped = rectangles
       .map((r) => r.intersect(bounds))
       .where((r) => r.width > 0 && r.height > 0)

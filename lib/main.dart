@@ -10,6 +10,7 @@ import 'dart:developer';
 import 'dart:ffi' hide Size;
 import 'dart:io';
 
+import 'package:custom_window/src/custom_window.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/_window.dart';
@@ -226,9 +227,8 @@ class _MultiWindowAppState extends State<MultiWindowApp> {
       title: 'Multi-Window Reference Application',
       delegate: MainControllerWindowDelegate(),
     );
+    CustomWindow.init(controller);
     if (controller is WindowControllerMacOS) {
-      final controllerMacOS = controller as WindowControllerMacOS;
-      cw_nswindow_remove_titlebar(controllerMacOS.getWindowHandle());
     } else if (controller is WindowControllerWin32) {
       final controllerWin32 = controller as WindowControllerWin32;
       controllerWin32.addWindowsMessageHandler(MessageHandler());

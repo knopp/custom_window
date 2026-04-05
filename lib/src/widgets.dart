@@ -1,17 +1,9 @@
-// ignore_for_file: invalid_use_of_internal_member
+// ignore_for_file: implementation_imports, invalid_use_of_internal_member
 
-import 'dart:async';
-
-import 'package:custom_window/src/invert_rectanges.dart';
-import 'package:custom_window/src/macos.g.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-
-import 'dart:ffi' hide Size;
-import 'package:ffi/ffi.dart' as ffi;
+import 'custom_window.dart';
 
 import 'package:flutter/src/widgets/_window.dart';
-import 'package:flutter/src/widgets/_window_macos.dart';
 
 class WindowDraggableArea extends StatefulWidget {
   const WindowDraggableArea({super.key, required this.child});
@@ -44,15 +36,26 @@ class _WindowDraggableAreaState extends State<WindowDraggableArea> {
     return widget.child;
   }
 
+  CustomWindow? _customWindow;
+
   void _frameTick() {
     if (!mounted) {
       return;
     }
-    final controller = WindowScope.maybeOf(context);
-    if (controller != null) {
-      _DraggableState.forController(
-        controller,
-      )._draggableElements.add(context as Element);
+
+    final customWindow = CustomWindow.forController(WindowScope.of(context));
+    if (customWindow != null) {
+      final view = context.findRenderObject() as RenderBox;
+      final transform = view.getTransformTo(null);
+      final rect = MatrixUtils.transformRect(
+        transform,
+        Offset.zero & view.size,
+      );
+      if (_customWindow != customWindow) {
+        _customWindow?.setDraggableRectForElement(context, null);
+        _customWindow = customWindow;
+      }
+      customWindow.setDraggableRectForElement(context, rect);
     }
   }
 
@@ -65,6 +68,7 @@ class _WindowDraggableAreaState extends State<WindowDraggableArea> {
   @override
   void dispose() {
     _PersistentFrameCallbackManager.instance.removeCallback(_frameTick);
+    _customWindow?.setDraggableRectForElement(context, null);
     super.dispose();
   }
 }
@@ -75,15 +79,25 @@ class _WindowDragExcludeState extends State<WindowDraggableExclude> {
     return widget.child;
   }
 
+  CustomWindow? _customWindow;
+
   void _frameTick() {
     if (!mounted) {
       return;
     }
-    final controller = WindowScope.maybeOf(context);
-    if (controller != null) {
-      _DraggableState.forController(
-        controller,
-      )._preventionElements.add(context as Element);
+    final customWindow = CustomWindow.forController(WindowScope.of(context));
+    if (customWindow != null) {
+      final view = context.findRenderObject() as RenderBox;
+      final transform = view.getTransformTo(null);
+      final rect = MatrixUtils.transformRect(
+        transform,
+        Offset.zero & view.size,
+      );
+      if (_customWindow != customWindow) {
+        _customWindow?.setDragExcludeRectForElement(context, null);
+        _customWindow = customWindow;
+      }
+      customWindow.setDragExcludeRectForElement(context, rect);
     }
   }
 
@@ -96,6 +110,7 @@ class _WindowDragExcludeState extends State<WindowDraggableExclude> {
   @override
   void dispose() {
     _PersistentFrameCallbackManager.instance.removeCallback(_frameTick);
+    _customWindow?.setDragExcludeRectForElement(context, null);
     super.dispose();
   }
 }
@@ -103,28 +118,27 @@ class _WindowDragExcludeState extends State<WindowDraggableExclude> {
 class _WindowTrafficLightState extends State<WindowTrafficLight> {
   @override
   Widget build(BuildContext context) {
-    return SizedBox(width: 54, height: 16);
+    final customWindow = CustomWindow.forController(WindowScope.of(context));
+    if (customWindow == null) {
+      return const SizedBox.shrink();
+    } else {
+      return SizedBox.fromSize(size: customWindow.getTrafficLightSize());
+    }
   }
 
   void _frameTick() {
     if (!mounted) {
       return;
     }
-    final controller = WindowScope.maybeOf(context);
-    if (controller is WindowControllerMacOS) {
-      final controllerMacOS = controller as WindowControllerMacOS;
+    final customWindow = CustomWindow.forController(WindowScope.of(context));
+    if (customWindow != null) {
       final view = context.findRenderObject() as RenderBox;
       final transform = view.getTransformTo(null);
       final rect = MatrixUtils.transformRect(
         transform,
         Offset.zero & view.size,
       );
-      cw_nswindow_update_traffic_light(
-        controllerMacOS.getWindowHandle(),
-        true,
-        rect.left,
-        rect.top,
-      );
+      customWindow.setTrafficLightPosition(rect.topLeft);
     }
   }
 
@@ -139,84 +153,6 @@ class _WindowTrafficLightState extends State<WindowTrafficLight> {
     _PersistentFrameCallbackManager.instance.removeCallback(_frameTick);
     super.dispose();
   }
-}
-
-class _DraggableState {
-  static _DraggableState forController(BaseWindowController controller) {
-    return _scheduled.putIfAbsent(controller, () {
-      scheduleMicrotask(() {
-        final state = _scheduled.remove(controller)!;
-        state._submit(controller);
-      });
-      return _DraggableState();
-    });
-  }
-
-  void _submit(BaseWindowController controller) {
-    _draggableElements.removeWhere((e) => !e.mounted);
-    _preventionElements.removeWhere((e) => !e.mounted);
-    if (_draggableElements.isEmpty) {
-      if (controller is WindowControllerMacOS) {
-        final controllerMacOS = controller as WindowControllerMacOS;
-        cw_nswindow_disable_draggable_areas(controllerMacOS.getWindowHandle());
-      }
-    } else {
-      final view = _draggableElements.first
-          .findAncestorRenderObjectOfType<RenderView>();
-      if (view == null) {
-        throw StateError('Unexpectedly missing RenderView in heirarchy');
-      }
-      final bounds = Offset.zero & view.size;
-      final draggableRects = <Rect>[];
-      final preventionRects = <Rect>[];
-
-      void addElementRect(List<Rect> where, Element element) {
-        final renderBox = element.findRenderObject()! as RenderBox;
-        final transform = renderBox.getTransformTo(null);
-        final rect = MatrixUtils.transformRect(
-          transform,
-          Offset.zero & renderBox.size,
-        );
-        where.add(rect);
-      }
-
-      for (final element in _draggableElements) {
-        addElementRect(draggableRects, element);
-      }
-
-      for (final element in _preventionElements) {
-        addElementRect(preventionRects, element);
-      }
-
-      final draggableInverted = invert(bounds, draggableRects);
-
-      final count = draggableInverted.length + preventionRects.length;
-
-      final rectsPointer = ffi.malloc<cw_rect_t>(count);
-
-      for (final (index, rect)
-          in draggableInverted.followedBy(preventionRects).indexed) {
-        rectsPointer[index].x = rect.left;
-        rectsPointer[index].y = rect.top;
-        rectsPointer[index].w = rect.width;
-        rectsPointer[index].h = rect.height;
-      }
-
-      if (controller is WindowControllerMacOS) {
-        final controllerMacOS = controller as WindowControllerMacOS;
-        cw_nswindow_update_draggable_areas(
-          controllerMacOS.getWindowHandle(),
-          rectsPointer,
-          count,
-        );
-      }
-    }
-  }
-
-  final _draggableElements = <Element>[];
-  final _preventionElements = <Element>[];
-
-  static final _scheduled = <BaseWindowController, _DraggableState>{};
 }
 
 class _PersistentFrameCallbackManager {
