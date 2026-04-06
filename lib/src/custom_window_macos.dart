@@ -101,5 +101,10 @@ class CustomWindowMacOS extends CustomWindow {
   }
 
   @override
-  void setWindowBorderSize(double size) {}
+  void setMaximizeButtonFrame(BuildContext element, Rect? rect) {}
+
+  @override
+  void requestClose() {
+    // TODO(knopp)
+  }
 }

@@ -2,9 +2,11 @@
 
 import 'package:flutter/src/widgets/_window.dart';
 import 'package:flutter/src/widgets/_window_macos.dart';
+import 'package:flutter/src/widgets/_window_win32.dart';
 import 'package:flutter/widgets.dart';
 
 import 'custom_window_macos.dart';
+import 'custom_window_win32.dart';
 
 abstract class CustomWindow {
   static CustomWindow? forController(BaseWindowController controller) {
@@ -23,6 +25,8 @@ abstract class CustomWindow {
   static CustomWindow? _create(BaseWindowController controller) {
     if (controller is WindowControllerMacOS) {
       return CustomWindowMacOS(controller as WindowControllerMacOS);
+    } else if (controller is WindowControllerWin32) {
+      return CustomWindowWin32(controller as WindowControllerWin32);
     } else {
       return null;
     }
@@ -31,6 +35,7 @@ abstract class CustomWindow {
   void setDraggableRectForElement(BuildContext element, Rect? rect);
   void setDragExcludeRectForElement(BuildContext element, Rect? rect);
   void setTrafficLightPosition(Offset offset);
+  void setMaximizeButtonFrame(BuildContext element, Rect? rect);
   Size getTrafficLightSize();
-  void setWindowBorderSize(double size);
+  void requestClose();
 }
