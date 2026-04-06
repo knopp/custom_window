@@ -50,83 +50,137 @@ class MainWindow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        // border: Border.all(color: Colors.blue, width: 1),
-        color: Colors.black,
-      ),
+      decoration: BoxDecoration(color: Colors.grey.shade300),
       child: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
-          WindowDraggableArea(
-            child: GestureDetector(
-              // onDoubleTap: () {
-              //   final controller = WindowScope.of(context);
-              //   final regular = controller as RegularWindowController;
-              //   regular.setMaximized(!regular.isMaximized);
-              // },
+          TitleBar(),
+          SizedBox(height: 50),
+          Center(
+            child: WindowDraggableArea(
               child: Container(
-                color: const Color.fromARGB(255, 6, 78, 8),
-                height: 40,
+                color: Colors.green,
+                padding: EdgeInsets.all(40),
+                child: Text('Draggable Area Widget'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TitleBar extends StatelessWidget {
+  const TitleBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return WindowDraggableArea(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade400,
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.shade500, width: 1),
+          ),
+        ),
+        height: 50,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(width: 20),
+            Center(
+              child: Text('Custom Titlebar', style: TextStyle(fontSize: 18)),
+            ),
+            Center(child: WindowTrafficLight()),
+            Spacer(),
+            Center(
+              child: WindowDraggableExclude(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    border: Border.all(color: Colors.grey.shade500, width: 1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text('Non-draggable area for tabs or other controls'),
+                ),
+              ),
+            ),
+            Spacer(),
+            Container(
+              alignment: Alignment.topCenter,
+              child: Container(
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  border: Border(
+                    left: BorderSide(color: Colors.grey.shade500, width: 1),
+                    bottom: BorderSide(color: Colors.grey.shade500, width: 1),
+                  ),
+                ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(width: 40),
-                    Center(child: WindowTrafficLight()),
-                    Spacer(),
-                    WindowDraggableExclude(
-                      child: Container(width: 40, color: Colors.red),
-                    ),
-                    Spacer(),
                     MinimizeButton(
                       builder: (context, state) {
                         Color color;
                         if (state.pressed) {
-                          color = Colors.red;
+                          color = Colors.white.withValues(alpha: 0.5);
                         } else if (state.hovered) {
-                          color = Colors.green;
+                          color = Colors.white.withValues(alpha: 0.3);
                         } else {
-                          color = Colors.blue;
+                          color = Colors.transparent;
                         }
-                        return Container(width: 40, color: color);
+                        return Container(
+                          width: 40,
+                          color: color,
+                          alignment: Alignment.center,
+                          child: Icon(Icons.horizontal_rule_outlined),
+                        );
                       },
                     ),
                     MaximizeButton(
                       builder: (context, state, isMaximized) {
                         Color color;
                         if (state.pressed) {
-                          color = Colors.red;
+                          color = Colors.white.withValues(alpha: 0.5);
                         } else if (state.hovered) {
-                          color = Colors.green;
+                          color = Colors.white.withValues(alpha: 0.3);
                         } else {
-                          color = Colors.blue;
+                          color = Colors.transparent;
                         }
-                        return Container(width: 40, color: color);
+                        return Container(
+                          width: 40,
+                          color: color,
+                          alignment: Alignment.center,
+                          child: Icon(Icons.square_outlined),
+                        );
                       },
                     ),
                     CloseButton(
                       builder: (context, state) {
                         Color color;
                         if (state.pressed) {
-                          color = Colors.red;
+                          color = Colors.red.shade700;
                         } else if (state.hovered) {
-                          color = Colors.green;
+                          color = Colors.red;
                         } else {
-                          color = Colors.blue;
+                          color = Colors.transparent;
                         }
-                        return Container(width: 40, color: color);
+                        return Container(
+                          width: 40,
+                          color: color,
+                          alignment: Alignment.center,
+                          child: Icon(Icons.close_outlined),
+                        );
                       },
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-          SizedBox(height: 50),
-          WindowDraggableArea(
-            child: Container(color: Colors.green, height: 30),
-          ),
-          Expanded(child: Text('Hello')),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -156,7 +210,10 @@ class _MultiWindowAppState extends State<MultiWindowApp> {
   Widget build(BuildContext context) {
     return RegularWindow(
       controller: controller,
-      child: MaterialApp(home: MainWindow(controller: controller)),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(body: MainWindow(controller: controller)),
+      ),
     );
   }
 }
