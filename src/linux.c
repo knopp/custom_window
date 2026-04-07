@@ -93,6 +93,9 @@ static void set_shadow_width_on_realize(GtkWidget *widget, gpointer user_data) {
   gdk_window_set_shadow_width(gdk_window, shadow_width->top, shadow_width->left,
                               shadow_width->bottom, shadow_width->right);
   free(shadow_width);
+
+  g_signal_handlers_disconnect_by_func(
+      widget, G_CALLBACK(set_shadow_width_on_realize), user_data);
 }
 
 EXPORT void cw_window_set_shadow_width(void *gtk_window, int top, int left,
