@@ -1,5 +1,6 @@
 // ignore_for_file: implementation_imports, invalid_use_of_internal_member
 
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:headless_widgets/headless_widgets.dart';
 import 'custom_window.dart';
@@ -174,20 +175,22 @@ class _MinimizeButtonState extends State<MinimizeButton> {
 class _MaximizeButtonState extends _FrameReportingState<MaximizeButton> {
   @override
   Widget build(BuildContext context) {
-    return Button(
-      builder: (context, buttonState, child) {
-        return widget.builder(
-          context,
-          TitlebarButtonState(
-            enabled: buttonState.enabled,
-            hovered: buttonState.hovered,
-            pressed: buttonState.pressed,
-          ),
-          _isMaximized,
-        );
-      },
-      focusNode: _buttonNode,
-      onPressed: widget.enabled ? _onPressed : null,
+    return WindowDraggableExclude(
+      child: Button(
+        builder: (context, buttonState, child) {
+          return widget.builder(
+            context,
+            TitlebarButtonState(
+              enabled: buttonState.enabled,
+              hovered: buttonState.hovered,
+              pressed: buttonState.pressed,
+            ),
+            _isMaximized,
+          );
+        },
+        focusNode: _buttonNode,
+        onPressed: widget.enabled ? _onPressed : null,
+      ),
     );
   }
 
@@ -287,7 +290,33 @@ class _WindowDraggableAreaState
     extends _FrameReportingState<WindowDraggableArea> {
   @override
   Widget build(BuildContext context) {
-    return widget.child;
+    GestureDragStartCallback? onPanStart;
+    GestureTapCallback? onDoubleTap;
+    final customWindow = CustomWindow.forController(WindowScope.of(context));
+    if (customWindow?.windowNeedsCustomBorder() == true) {
+      onPanStart = (details) {
+        final customWindow = CustomWindow.forController(
+          WindowScope.of(context),
+        )!;
+        customWindow.startWindowMoveDrag(details.globalPosition);
+      };
+    }
+    final controller = WindowScope.of(context);
+    if (customWindow?.titlebarNeedsDoubleClickDetector() == true &&
+        controller is RegularWindowController) {
+      onDoubleTap = () {
+        controller.setMaximized(!controller.isMaximized);
+      };
+    }
+    if (onPanStart != null || onDoubleTap != null) {
+      return GestureDetector(
+        onPanStart: onPanStart,
+        onDoubleTap: onDoubleTap,
+        child: widget.child,
+      );
+    } else {
+      return widget.child;
+    }
   }
 
   @override
@@ -300,7 +329,14 @@ class _WindowDragExcludeState
     extends _FrameReportingState<WindowDraggableExclude> {
   @override
   Widget build(BuildContext context) {
-    return widget.child;
+    final customWindow = CustomWindow.forController(WindowScope.of(context));
+    if (customWindow?.windowNeedsCustomBorder() == true) {
+      // Add empty gesture detector so that the window drag gesture detector doesn't
+      // detect gestures in this subtree.
+      return GestureDetector(child: widget.child, onPanDown: (_) {});
+    } else {
+      return widget.child;
+    }
   }
 
   @override
@@ -326,6 +362,199 @@ class _WindowTrafficLightState
     if (rect != null) {
       window.setTrafficLightPosition(rect.topLeft);
     }
+  }
+}
+
+class WindowBorder extends StatefulWidget {
+  const WindowBorder({
+    super.key,
+    required this.child,
+    this.cornerRadius = 12.0,
+  });
+
+  final Widget child;
+  final double cornerRadius;
+
+  @override
+  State<WindowBorder> createState() => _WindowBorderState();
+}
+
+class _WindowBorderState extends State<WindowBorder> {
+  // Complete padding around the content, must be enough for shadow to blend smoothly
+  static const _borderPadding = 16.0;
+  // Part of border padding that can is user interactive (resizing handles)
+  static const _resizingHandleThickness = 12.0;
+  // Part of resizing handles that is inside window frame
+  static const _resizingHandleThicknessInside = 2.0;
+
+  @override
+  void didChangeDependencies() {
+    final customWindow = CustomWindow.forController(WindowScope.of(context));
+    if (customWindow != null && customWindow.windowNeedsCustomBorder()) {
+      customWindow.setCustomBorderShadowWidth(
+        _borderPadding,
+        _borderPadding,
+        _borderPadding,
+        _borderPadding,
+      );
+    }
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final customWindow = CustomWindow.forController(WindowScope.of(context));
+    if (customWindow == null || !customWindow.windowNeedsCustomBorder()) {
+      return widget.child;
+    }
+    // TODO: This should be adjusted when window is maximized
+    // (or docked to the side of screen)
+    final effectiveCornerRadius = widget.cornerRadius;
+    return Padding(
+      padding: const EdgeInsets.all(
+        _borderPadding -
+            _resizingHandleThickness +
+            _resizingHandleThicknessInside,
+      ),
+      child: _ResizingHandles(
+        thickness: _resizingHandleThickness,
+        cornerSize: _resizingHandleThickness + effectiveCornerRadius / 2.0,
+        child: Padding(
+          padding: const EdgeInsets.all(
+            _resizingHandleThickness - _resizingHandleThicknessInside,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(effectiveCornerRadius),
+              border: Border.all(
+                width: 1,
+                color: Color(0xFF000000).withValues(alpha: 0.1),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFF000000).withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(1),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(effectiveCornerRadius),
+                child: widget.child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResizingHandles extends StatelessWidget {
+  const _ResizingHandles({
+    super.key,
+    required this.thickness,
+    required this.cornerSize,
+    required this.child,
+  });
+
+  final Widget child;
+  final double cornerSize;
+  final double thickness;
+
+  Widget _buildHandle(WindowEdge edge, BuildContext context) {
+    final cursor = switch (edge) {
+      WindowEdge.northWest => SystemMouseCursors.resizeUpLeftDownRight,
+      WindowEdge.north => SystemMouseCursors.resizeUpDown,
+      WindowEdge.northEast => SystemMouseCursors.resizeUpRightDownLeft,
+      WindowEdge.west => SystemMouseCursors.resizeLeftRight,
+      WindowEdge.east => SystemMouseCursors.resizeLeftRight,
+      WindowEdge.southWest => SystemMouseCursors.resizeUpRightDownLeft,
+      WindowEdge.south => SystemMouseCursors.resizeUpDown,
+      WindowEdge.southEast => SystemMouseCursors.resizeUpLeftDownRight,
+    };
+    return MouseRegion(
+      cursor: cursor,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanStart: (details) {
+          final customWindow = CustomWindow.forController(
+            WindowScope.of(context),
+          )!;
+          customWindow.startWindowResizeDrag(details.globalPosition, edge);
+        },
+        child: SizedBox.expand(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.passthrough,
+      alignment: Alignment.topLeft,
+      children: [
+        child,
+        Positioned(
+          top: 0,
+          left: 0,
+          width: cornerSize,
+          height: cornerSize,
+          child: _buildHandle(WindowEdge.northWest, context),
+        ),
+        Positioned(
+          top: 0,
+          left: cornerSize,
+          right: cornerSize,
+          height: thickness,
+          child: _buildHandle(WindowEdge.north, context),
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          width: cornerSize,
+          height: cornerSize,
+          child: _buildHandle(WindowEdge.northEast, context),
+        ),
+        Positioned(
+          top: cornerSize,
+          left: 0,
+          bottom: cornerSize,
+          width: thickness,
+          child: _buildHandle(WindowEdge.west, context),
+        ),
+        Positioned(
+          top: cornerSize,
+          right: 0,
+          bottom: cornerSize,
+          width: thickness,
+          child: _buildHandle(WindowEdge.east, context),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          width: cornerSize,
+          height: cornerSize,
+          child: _buildHandle(WindowEdge.southWest, context),
+        ),
+        Positioned(
+          bottom: 0,
+          left: cornerSize,
+          right: cornerSize,
+          height: thickness,
+          child: _buildHandle(WindowEdge.south, context),
+        ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          width: cornerSize,
+          height: cornerSize,
+          child: _buildHandle(WindowEdge.southEast, context),
+        ),
+      ],
+    );
   }
 }
 

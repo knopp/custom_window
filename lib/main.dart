@@ -17,7 +17,6 @@ import 'src/widgets.dart';
 
 class MainControllerWindowDelegate with RegularWindowControllerDelegate {
   @override
-  @override
   void onWindowDestroyed() {
     super.onWindowDestroyed();
     exit(0);
@@ -210,9 +209,11 @@ class _MultiWindowAppState extends State<MultiWindowApp> {
   Widget build(BuildContext context) {
     return RegularWindow(
       controller: controller,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(body: MainWindow(controller: controller)),
+      child: WindowBorder(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Scaffold(body: MainWindow(controller: controller)),
+        ),
       ),
     );
   }

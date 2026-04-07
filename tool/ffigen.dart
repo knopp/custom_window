@@ -28,6 +28,10 @@ void main() {
     entryPoint = 'windows.h';
     generatedFile = 'windows.g.dart';
     assetId = 'windows';
+  } else if (Platform.isLinux) {
+    entryPoint = 'linux.h';
+    generatedFile = 'linux.g.dart';
+    assetId = 'linux';
   } else {
     return;
   }
@@ -35,7 +39,6 @@ void main() {
   bool filter(Declaration declaration) =>
       declaration.originalName.startsWith('cw_');
 
-  // Generate bindings for Gtk3
   FfiGenerator(
     output: Output(
       dartFile: packageRoot.resolve('lib/src/$generatedFile'),

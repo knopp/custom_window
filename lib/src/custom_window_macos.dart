@@ -107,4 +107,28 @@ class CustomWindowMacOS extends CustomWindow {
   void requestClose() {
     // TODO(knopp)
   }
+
+  @override
+  bool windowNeedsCustomBorder() {
+    return false;
+  }
+
+  @override
+  void setCustomBorderShadowWidth(
+    double top,
+    double left,
+    double bottom,
+    double right,
+  ) {}
+
+  @override
+  void startWindowMoveDrag(Offset globalPosition) {}
+
+  @override
+  void startWindowResizeDrag(Offset globalPosition, WindowEdge edge) {}
+
+  @override
+  bool titlebarNeedsDoubleClickDetector() {
+    return true;
+  }
 }

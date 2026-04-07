@@ -1,9 +1,20 @@
+import 'dart:io';
+
 import 'package:native_toolchain_ninja/native_toolchain_ninja.dart';
 import 'package:code_assets/code_assets.dart';
 import 'package:logging/logging.dart';
 import 'package:hooks/hooks.dart';
 
-import 'dart:ffi';
+Future<List<String>> _pkgConfig(String flag, String packageName) async {
+  final result = await Process.run('pkg-config', [flag, packageName]);
+  if (result.exitCode != 0) {
+    throw BuildError(message: 'pkg-config failed: ${result.stderr}');
+  }
+  return (result.stdout as String)
+      .split(RegExp(r'\s+'))
+      .where((s) => s.isNotEmpty)
+      .toList();
+}
 
 void main(List<String> args) async {
   await build(args, (input, output) async {
@@ -34,39 +45,21 @@ void main(List<String> args) async {
         flags: [],
         defines: {'CW_BUILDING_DLL': ''},
       );
-    }
-
-    if (input.config.code.targetOS == OS.linux) {
-      final abi = Abi.current();
-      final libPrefix = abi == Abi.linuxArm64
-          ? 'aarch64-linux-gnu'
-          : 'x86_64-linux-gnu';
+    } else if (input.config.code.targetOS == OS.linux) {
       ninjaBuilder = NinjaBuilder.library(
         name: packageName,
         assetName: 'linux',
-        sources: [
-          // 'src/linux/buffer.cpp',
-          // 'src/linux/linux-dmabuf-unstable-v1-client-protocol.cpp',
-          // 'src/linux/linux.cpp',
-          // 'src/linux/wayland.cpp',
-          // 'src/linux/window.cpp',
-        ],
+        sources: ['src/linux.c'],
         buildMode: BuildMode.debug,
         optimizationLevel: OptimizationLevel.o0,
-        flags: ['-g'],
-        includes: [
-          '/usr/include/gtk-3.0',
-          '/usr/include/glib-2.0',
-          '/usr/include/pango-1.0',
-          '/usr/include/harfbuzz',
-          '/usr/include/cairo',
-          '/usr/include/gdk-pixbuf-2.0',
-          '/usr/include/atk-1.0',
-          '/usr/lib/$libPrefix/glib-2.0/include',
-          '/usr/lib/$libPrefix/gtk-3.0/include',
+        flags: [
+          '-g',
+          ...(await _pkgConfig('--cflags', 'gtk+-3.0')),
         ],
-        language: Language.cpp,
-        libraries: ['gbm', 'EGL'],
+        language: Language.c,
+        libraries: [
+          // Everything we need will be linked into the final executable.
+        ],
       );
     }
 
