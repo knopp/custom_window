@@ -109,6 +109,11 @@ class CustomWindowMacOS extends CustomWindow {
   }
 
   @override
+  bool windowNeedsMoveDragDetector() {
+    return true;
+  }
+
+  @override
   bool windowNeedsCustomBorder() {
     return false;
   }

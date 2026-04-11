@@ -150,7 +150,6 @@ class CustomWindowWin32 extends CustomWindow implements WindowsMessageHandler {
     // malloc.free(margins);
   }
 
-  final _draggableRects = <BuildContext, Rect>{};
   final _dragExcludeRects = <BuildContext, Rect>{};
   final _maximizeButtonRects = <BuildContext, Rect>{};
 
@@ -164,13 +163,7 @@ class CustomWindowWin32 extends CustomWindow implements WindowsMessageHandler {
   }
 
   @override
-  void setDraggableRectForElement(BuildContext element, Rect? rect) {
-    if (rect == null) {
-      _draggableRects.remove(element);
-    } else {
-      _draggableRects[element] = rect;
-    }
-  }
+  void setDraggableRectForElement(BuildContext element, Rect? rect) {}
 
   @override
   void setMaximizeButtonFrame(BuildContext element, Rect? rect) {
@@ -281,11 +274,6 @@ class CustomWindowWin32 extends CustomWindow implements WindowsMessageHandler {
             return HTCLIENT;
           }
         }
-        for (final draggableRect in _draggableRects.values) {
-          if (draggableRect.contains(Offset(x, y))) {
-            return HTCAPTION;
-          }
-        }
         return HTCLIENT;
       case WM_NCMOUSEMOVE:
         if (wParam == HTMAXBUTTON || wParam == HTCAPTION) {
@@ -362,6 +350,11 @@ class CustomWindowWin32 extends CustomWindow implements WindowsMessageHandler {
   }
 
   @override
+  bool windowNeedsMoveDragDetector() {
+    return true;
+  }
+
+  @override
   void setCustomBorderShadowWidth(
     double top,
     double left,
@@ -370,13 +363,16 @@ class CustomWindowWin32 extends CustomWindow implements WindowsMessageHandler {
   ) {}
 
   @override
-  void startWindowMoveDrag(Offset globalPosition) {}
+  void startWindowMoveDrag(Offset globalPosition) {
+    ReleaseCapture();
+    SendMessage(_hwnd, WM_NCLBUTTONDOWN, WPARAM(HTCAPTION), LPARAM(0));
+  }
 
   @override
   void startWindowResizeDrag(Offset globalPosition, WindowEdge edge) {}
 
   @override
   bool titlebarNeedsDoubleClickDetector() {
-    return false;
+    return true;
   }
 }

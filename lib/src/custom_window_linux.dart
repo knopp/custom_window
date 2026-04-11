@@ -42,6 +42,11 @@ class CustomWindowLinux extends CustomWindow {
   }
 
   @override
+  bool windowNeedsMoveDragDetector() {
+    return true;
+  }
+
+  @override
   bool windowNeedsCustomBorder() {
     // TODO: Determine if we're running with SSD.
     return true;

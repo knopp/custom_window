@@ -295,7 +295,7 @@ class _WindowDraggableAreaState
   Widget build(BuildContext context) {
     final gestures = <Type, GestureRecognizerFactory>{};
     final customWindow = CustomWindow.forController(WindowScope.of(context));
-    if (customWindow?.windowNeedsCustomBorder() == true) {
+    if (customWindow?.windowNeedsMoveDragDetector() == true) {
       gestures[_DragPanGestureRecognizer] =
           GestureRecognizerFactoryWithHandlers<_DragPanGestureRecognizer>(
             () => _DragPanGestureRecognizer(debugOwner: this),
@@ -465,6 +465,7 @@ class _WindowBorderState extends State<WindowBorder> {
 
 class _ResizingHandles extends StatelessWidget {
   const _ResizingHandles({
+    // ignore: unused_element_parameter
     super.key,
     required this.thickness,
     required this.cornerSize,
@@ -595,7 +596,8 @@ class _PersistentFrameCallbackManager {
 }
 
 class _DragExcludeWidget extends SingleChildRenderObjectWidget {
-  _DragExcludeWidget({super.key, super.child});
+  // ignore: unused_element_parameter
+  const _DragExcludeWidget({super.key, super.child});
 
   @override
   RenderObject createRenderObject(BuildContext context) {

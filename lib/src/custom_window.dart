@@ -43,6 +43,7 @@ abstract class CustomWindow {
   Size getTrafficLightSize();
   void requestClose();
 
+  bool windowNeedsMoveDragDetector();
   bool windowNeedsCustomBorder();
   bool titlebarNeedsDoubleClickDetector();
   void setCustomBorderShadowWidth(
