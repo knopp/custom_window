@@ -8,7 +8,9 @@ library;
 import 'dart:ffi' as ffi;
 
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
-external void cw_nswindow_remove_titlebar(ffi.Pointer<ffi.Void> ns_window);
+external void cw_nswindow_remove_titlebar(
+  ffi.Pointer<ffi.Void> ns_window,
+);
 
 @ffi.Native<
   ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<cw_rect_t>, ffi.Size)
@@ -32,6 +34,11 @@ external void cw_nswindow_update_traffic_light(
   bool enabled,
   double x,
   double y,
+);
+
+@ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
+external void cw_nswindow_request_close(
+  ffi.Pointer<ffi.Void> ns_window,
 );
 
 final class cw_rect_t extends ffi.Struct {

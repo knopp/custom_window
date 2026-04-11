@@ -1,4 +1,4 @@
-// ignore_for_file: implementation_imports
+// ignore_for_file: invalid_use_of_internal_member, implementation_imports
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -105,7 +105,7 @@ class CustomWindowMacOS extends CustomWindow {
 
   @override
   void requestClose() {
-    // TODO(knopp)
+    cw_nswindow_request_close(controller.getWindowHandle());
   }
 
   @override

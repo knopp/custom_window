@@ -27,6 +27,8 @@ EXPORT void cw_nswindow_disable_draggable_areas(void *ns_window);
 EXPORT void cw_nswindow_update_traffic_light(void *ns_window, bool enabled,
                                              double x, double y);
 
+EXPORT void cw_nswindow_request_close(void *ns_window);
+
 #ifdef __cplusplus
 }
 #endif

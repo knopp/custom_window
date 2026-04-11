@@ -1,6 +1,8 @@
 // ignore_for_file: implementation_imports, invalid_use_of_internal_member
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:headless_widgets/headless_widgets.dart';
 import 'custom_window.dart';
@@ -196,6 +198,7 @@ class _MaximizeButtonState extends _FrameReportingState<MaximizeButton> {
 
   void _onPressed() {
     final controller = WindowScope.of(context) as RegularWindowController;
+    print('**** BUTTON TAP ****');
     controller.setMaximized(!controller.isMaximized);
   }
 
@@ -290,28 +293,41 @@ class _WindowDraggableAreaState
     extends _FrameReportingState<WindowDraggableArea> {
   @override
   Widget build(BuildContext context) {
-    GestureDragStartCallback? onPanStart;
-    GestureTapCallback? onDoubleTap;
+    final gestures = <Type, GestureRecognizerFactory>{};
     final customWindow = CustomWindow.forController(WindowScope.of(context));
     if (customWindow?.windowNeedsCustomBorder() == true) {
-      onPanStart = (details) {
-        final customWindow = CustomWindow.forController(
-          WindowScope.of(context),
-        )!;
-        customWindow.startWindowMoveDrag(details.globalPosition);
-      };
+      gestures[_DragPanGestureRecognizer] =
+          GestureRecognizerFactoryWithHandlers<_DragPanGestureRecognizer>(
+            () => _DragPanGestureRecognizer(debugOwner: this),
+            (_DragPanGestureRecognizer instance) {
+              instance.onStart = (details) {
+                final customWindow = CustomWindow.forController(
+                  WindowScope.of(context),
+                )!;
+                customWindow.startWindowMoveDrag(details.globalPosition);
+              };
+            },
+          );
     }
     final controller = WindowScope.of(context);
     if (customWindow?.titlebarNeedsDoubleClickDetector() == true &&
         controller is RegularWindowController) {
-      onDoubleTap = () {
-        controller.setMaximized(!controller.isMaximized);
-      };
+      gestures[_DoubleTapToMaximizeGestureRecognizer] =
+          GestureRecognizerFactoryWithHandlers<
+            _DoubleTapToMaximizeGestureRecognizer
+          >(
+            () => _DoubleTapToMaximizeGestureRecognizer(debugOwner: this),
+            (_DoubleTapToMaximizeGestureRecognizer instance) {
+              instance.onDoubleTap = () {
+                controller.setMaximized(!controller.isMaximized);
+              };
+            },
+          );
     }
-    if (onPanStart != null || onDoubleTap != null) {
-      return GestureDetector(
-        onPanStart: onPanStart,
-        onDoubleTap: onDoubleTap,
+    if (gestures.isNotEmpty) {
+      return RawGestureDetector(
+        gestures: gestures,
+        behavior: HitTestBehavior.translucent,
         child: widget.child,
       );
     } else {
@@ -329,14 +345,9 @@ class _WindowDragExcludeState
     extends _FrameReportingState<WindowDraggableExclude> {
   @override
   Widget build(BuildContext context) {
-    final customWindow = CustomWindow.forController(WindowScope.of(context));
-    if (customWindow?.windowNeedsCustomBorder() == true) {
-      // Add empty gesture detector so that the window drag gesture detector doesn't
-      // detect gestures in this subtree.
-      return GestureDetector(child: widget.child, onPanDown: (_) {});
-    } else {
-      return widget.child;
-    }
+    return _DragExcludeWidget(
+      child: widget.child,
+    );
   }
 
   @override
@@ -581,4 +592,55 @@ class _PersistentFrameCallbackManager {
 
   final _callbacks = <VoidCallback>[];
   static final instance = _PersistentFrameCallbackManager._();
+}
+
+class _DragExcludeWidget extends SingleChildRenderObjectWidget {
+  _DragExcludeWidget({super.key, super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _DragExcludeRenderObject();
+  }
+}
+
+class _DragExcludeRenderObject extends RenderProxyBox {}
+
+class _DragPanGestureRecognizer extends PanGestureRecognizer {
+  _DragPanGestureRecognizer({super.debugOwner});
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    final HitTestResult result = HitTestResult();
+    RendererBinding.instance.hitTestInView(
+      result,
+      event.position,
+      event.viewId,
+    );
+    for (final hit in result.path) {
+      if (hit.target is _DragExcludeRenderObject) {
+        return;
+      }
+    }
+    super.addAllowedPointer(event);
+  }
+}
+
+class _DoubleTapToMaximizeGestureRecognizer extends DoubleTapGestureRecognizer {
+  _DoubleTapToMaximizeGestureRecognizer({super.debugOwner});
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    final HitTestResult result = HitTestResult();
+    RendererBinding.instance.hitTestInView(
+      result,
+      event.position,
+      event.viewId,
+    );
+    for (final hit in result.path) {
+      if (hit.target is _DragExcludeRenderObject) {
+        return;
+      }
+    }
+    super.addAllowedPointer(event);
+  }
 }

@@ -135,8 +135,13 @@ void cw_nswindow_disable_draggable_areas(void *ns_window) {
   [window setMovableByWindowBackground:NO];
 }
 
-EXPORT void cw_nswindow_update_traffic_light(void *ns_window, bool enabled,
-                                             double x, double y) {
+void cw_nswindow_request_close(void *ns_window) {
+  NSWindow *window = (__bridge NSWindow *)ns_window;
+  [window performClose:nil];
+}
+
+void cw_nswindow_update_traffic_light(void *ns_window, bool enabled, double x,
+                                      double y) {
   NSWindow *window = (__bridge NSWindow *)ns_window;
   CWWindowDraggingView *draggingView = [CWWindowDraggingView forWindow:window];
   CWTrafficLight *trafficLight = draggingView.trafficLight;

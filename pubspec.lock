@@ -183,10 +183,10 @@ packages:
     dependency: "direct main"
     description:
       name: headless_widgets
-      sha256: c7579325df14c446efc42aa46518ef466a5038fd1c21e6abfc9aea9fc30ca8c7
+      sha256: ec0cfcb8e3b13a169451b8f4c1e89a318002727afea5cd764dbb39819dded186
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.5"
+    version: "0.0.7"
   hooks:
     dependency: "direct main"
     description:
